@@ -1,0 +1,39 @@
+spring:
+  kafka:
+    listener:
+      type: batch
+    bootstrap-servers: kafka:9092
+    properties:
+      schema.registry.url: http://schema-registry:8081
+      specific.avro.reader: false
+    consumer:
+      group-id: parquet-writer
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: io.confluent.kafka.serializers.KafkaAvroDeserializer
+
+parquet-writer:
+  kafka:
+    topic: airline-event
+  minio:
+    url: http://minio:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket: warehouse
+  iceberg:
+    catalog-url: jdbc:postgresql://postgres:5432/iceberg
+    catalog-user: postgres
+    catalog-password: postgres
+    warehouse-path: s3a://warehouse/
+  table:
+    namespace: db
+    name: airline_events
+    batch-size: 1000
+
+logging:
+  level:
+    org.springframework.kafka: WARN
+    org.apache.kafka: WARN
+    org.apache.iceberg: INFO
+    ir.airline.parquetwriter: INFO

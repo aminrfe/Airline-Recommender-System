@@ -1,0 +1,121 @@
+services:
+  producer:
+    image: airline-recommender/producer:1
+    container_name: producer
+    depends_on:
+      schema-registry:
+        condition: service_healthy
+
+  parquet-writer:
+    image: airline-recommender/parquet-writer:1
+    container_name: parquet-writer
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      schema-registry:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: iceberg
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d iceberg" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  minio:
+    image: minio/minio
+    container_name: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command:  server /data --console-address ":9001"
+    volumes:
+      - ./minio-data:/data
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    environment:
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      CLUSTER_ID: Mk9VJqZfTiy5R4CHy7hPLA==  # Generate once: ./bin/kafka-storage.sh random-uuid
+#    volumes:
+#      - kafka-data:/opt/kafka/data
+    healthcheck:
+      test: [ "CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.0
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
+    depends_on:
+      - kafka
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/subjects" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+#  redpanda-console:
+#    image: redpandadata/console:latest
+#    container_name: redpanda-console
+#    ports:
+#      - "8080:8080"
+#    entrypoint: /bin/sh
+#    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+#    environment:
+#      CONFIG_FILEPATH: /tmp/config.yml
+#      CONSOLE_CONFIG_FILE: |
+#        kafka:
+#          brokers: ["kafka:9092"]
+#        schemaRegistry:
+#          enabled: true
+#          urls: ["http://schema-registry:8081"]
+#    depends_on:
+#      schema-registry:
+#        condition: service_healthy
+#    healthcheck:
+#      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/health" ]
+#      interval: 10s
+#      timeout: 5s
+#      retries: 3
+#      start_period: 10s
+
+volumes:
+  minio_data:
+#  kafka-data:

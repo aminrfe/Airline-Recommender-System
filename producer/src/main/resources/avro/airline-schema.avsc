@@ -1,0 +1,74 @@
+{
+  "type": "record",
+  "name": "AirlineEvent",
+  "namespace": "ir.airline",
+  "fields": [
+    {
+      "name": "passengerId",
+      "type": "string"
+    },
+    {
+      "name": "firstName",
+      "type": "string"
+    },
+    {
+      "name": "lastName",
+      "type": "string"
+    },
+    {
+      "name": "gender",
+      "type": "string"
+    },
+    {
+      "name": "age",
+      "type": "int"
+    },
+    {
+      "name": "nationality",
+      "type": "string"
+    },
+    {
+      "name": "airportName",
+      "type": "string"
+    },
+    {
+      "name": "airportCountryCode",
+      "type": "string"
+    },
+    {
+      "name": "countryName",
+      "type": "string"
+    },
+    {
+      "name": "airportContinent",
+      "type": "string"
+    },
+    {
+      "name": "continents",
+      "type": "string"
+    },
+    {
+      "name": "departureDate",
+      "type": "string"
+    },
+    {
+      "name": "arrivalAirport",
+      "type": "string"
+    },
+    {
+      "name": "pilotName",
+      "type": "string"
+    },
+    {
+      "name": "flightStatus",
+      "type": "string"
+    },
+    {
+      "name": "timestamp",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    }
+  ]
+}
