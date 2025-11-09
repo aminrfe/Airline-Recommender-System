@@ -2,7 +2,7 @@ package ir.airline.parquetwriter.iceberg;
 
 import ir.airline.parquetwriter.config.ParquetWriterConfig;
 import ir.airline.parquetwriter.iceberg.writer.ParquetWriterService;
-import ir.airline.parquetwriter.util.AirlineEventSchema;
+import ir.airline.parquetwriter.util.SchemaUtil;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Instant;
@@ -51,7 +51,7 @@ public class IcebergTableManager {
             log.info("Table {} exists.", tableId);
             return;
         }
-        Schema schema = AirlineEventSchema.ICEBERG_SCHEMA;
+        Schema schema = SchemaUtil.ICEBERG_SCHEMA;
         // TODO: Add partition key
         PartitionSpec spec = PartitionSpec.unpartitioned();
         catalog.createTable(tableId, schema, spec);
@@ -68,7 +68,7 @@ public class IcebergTableManager {
 
         // TODO: Remove
         rows = rows + icebergRecords.size();
-        System.out.println("✅ Total rows in Iceberg table: " + rows);
+        System.out.println("Total rows in Iceberg table: " + rows);
     }
 
     private List<Record> convertToIcebergRecords(List<GenericRecord> avroRecords) {

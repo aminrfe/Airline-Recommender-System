@@ -3,7 +3,7 @@ services:
     image: airline-recommender/producer:1
     container_name: producer
     depends_on:
-      schema-registry:
+      kafka:
         condition: service_healthy
 
   parquet-writer:
@@ -14,7 +14,7 @@ services:
         condition: service_healthy
       minio:
         condition: service_started
-      schema-registry:
+      kafka:
         condition: service_healthy
 
   postgres:
@@ -66,55 +66,53 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      CLUSTER_ID: Mk9VJqZfTiy5R4CHy7hPLA==  # Generate once: ./bin/kafka-storage.sh random-uuid
+      CLUSTER_ID: Mk9VJqZfTiy5R4CHy7hPLA==
 #    volumes:
 #      - kafka-data:/opt/kafka/data
     healthcheck:
-      test: [ "CMD", "kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      test: [ "CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "kafka:9092", "--list" ]
       interval: 10s
-      timeout: 5s
-      retries: 5
-
-  schema-registry:
-    image: confluentinc/cp-schema-registry:7.5.0
-    ports:
-      - "8081:8081"
-    environment:
-      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
-    depends_on:
-      - kafka
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8081/subjects" ]
-      interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
 
-#  redpanda-console:
-#    image: redpandadata/console:latest
-#    container_name: redpanda-console
+#  schema-registry:
+#    image: confluentinc/cp-schema-registry:7.5.0
 #    ports:
-#      - "8080:8080"
-#    entrypoint: /bin/sh
-#    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+#      - "8081:8081"
 #    environment:
-#      CONFIG_FILEPATH: /tmp/config.yml
-#      CONSOLE_CONFIG_FILE: |
-#        kafka:
-#          brokers: ["kafka:9092"]
-#        schemaRegistry:
-#          enabled: true
-#          urls: ["http://schema-registry:8081"]
+#      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+#      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
 #    depends_on:
-#      schema-registry:
+#      kafka:
 #        condition: service_healthy
 #    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/health" ]
-#      interval: 10s
-#      timeout: 5s
-#      retries: 3
-#      start_period: 10s
+#      test: [ "CMD", "curl", "-f", "http://localhost:8081/subjects" ]
+#      interval: 30s
+#      timeout: 10s
+#      retries: 5
+#      start_period: 60s
+
+  redpanda-console:
+    image: redpandadata/console:latest
+    container_name: redpanda-console
+    ports:
+      - "8080:8080"
+    entrypoint: /bin/sh
+    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
+    environment:
+      CONFIG_FILEPATH: /tmp/config.yml
+      CONSOLE_CONFIG_FILE: |
+        kafka:
+          brokers: ["kafka:9092"]
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   minio_data:

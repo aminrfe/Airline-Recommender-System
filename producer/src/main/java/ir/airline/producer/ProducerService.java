@@ -1,10 +1,10 @@
 package ir.airline.producer;
 
+import ir.airline.producer.util.AvroUtil;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.kafka.clients.producer.ProducerRecord;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -14,19 +14,22 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class ProducerService {
 
-    private final KafkaTemplate<String, GenericRecord> kafkaTemplate;
+    private final KafkaTemplate<String, byte[]> kafkaTemplate;
 
     @Value("${spring.kafka.producer.topic}")
     private String topic;
 
     public void sendRecord(Map<String, String> recordData) {
-        log.info("Sending record: {}", recordData);
-        GenericRecord avroRecord = AvroRecordCreator.createAvroRecord(recordData);
-        System.out.println(avroRecord.toString());
-        ProducerRecord<String, GenericRecord> producerRecord =
-                new ProducerRecord<>(topic, null, avroRecord);
+        try {
+            log.info("Sending record: {}", recordData);
+            GenericRecord avro = AvroUtil.createAvroRecord(recordData);
+            byte[] payload = AvroUtil.encode(avro);
 
-        kafkaTemplate.send(producerRecord);
-        log.info("Avro event sent to Kafka topic {}: {}", topic, avroRecord);
+            kafkaTemplate.send(topic, payload);
+            log.info("Avro (binary) event sent to Kafka topic {}", topic);
+
+        } catch (Exception e) {
+            log.error("Failed to encode/send Avro", e);
+        }
     }
 }

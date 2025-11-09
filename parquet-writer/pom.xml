@@ -18,7 +18,6 @@
         <spring.boot.version>3.3.7</spring.boot.version>
         <iceberg.version>1.5.2</iceberg.version>
         <avro.version>1.11.3</avro.version>
-        <confluent.version>7.5.0</confluent.version>
         <hadoop.version>3.3.6</hadoop.version>
     </properties>
 
@@ -49,12 +48,6 @@
             <groupId>org.apache.avro</groupId>
             <artifactId>avro</artifactId>
             <version>${avro.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.confluent</groupId>
-            <artifactId>kafka-avro-serializer</artifactId>
-            <version>${confluent.version}</version>
         </dependency>
 
         <dependency>

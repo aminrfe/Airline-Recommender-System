@@ -1,20 +1,26 @@
-package ir.airline.producer;
+package ir.airline.producer.util;
 
+import ir.airline.producer.IngesterConstants;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
+import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.avro.generic.GenericData;
 import org.apache.avro.Schema;
+import org.apache.avro.io.BinaryEncoder;
+import org.apache.avro.io.DatumWriter;
+import org.apache.avro.io.EncoderFactory;
 
-public class AvroRecordCreator {
+public class AvroUtil {
 
     private static final String AVRO_SCHEMA_PATH = "avro/airline-schema.avsc";
     private static final Schema SCHEMA;
 
     static {
         try {
-            InputStream schemaStream = AvroRecordCreator.class.getClassLoader()
+            InputStream schemaStream = AvroUtil.class.getClassLoader()
                     .getResourceAsStream(AVRO_SCHEMA_PATH);
             SCHEMA = new Schema.Parser().parse(schemaStream);
         } catch (IOException e) {
@@ -43,5 +49,15 @@ public class AvroRecordCreator {
 
         record.put(IngesterConstants.TIMESTAMP, System.currentTimeMillis());
         return record;
+    }
+
+    public static byte[] encode(GenericRecord record) throws Exception {
+        Schema schema = record.getSchema();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        DatumWriter<GenericRecord> writer = new GenericDatumWriter<>(schema);
+        BinaryEncoder enc = EncoderFactory.get().binaryEncoder(out, null);
+        writer.write(record, enc);
+        enc.flush();
+        return out.toByteArray();
     }
 }
