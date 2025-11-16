@@ -24,8 +24,8 @@ parquet-writer:
     catalog-password: postgres
     warehouse-path: s3a://warehouse/
   table:
-    namespace: db
-    name: airline_events
+    namespace: default
+    name: airline_event
     batch-size: 1000
 
 logging:
