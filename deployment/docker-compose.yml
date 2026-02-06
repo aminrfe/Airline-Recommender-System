@@ -1,22 +1,4 @@
 services:
-  producer:
-    image: airline-recommender/producer:1
-    container_name: producer
-    depends_on:
-      kafka:
-        condition: service_healthy
-
-  parquet-writer:
-    image: airline-recommender/parquet-writer:1
-    container_name: parquet-writer
-    depends_on:
-      postgres:
-        condition: service_healthy
-      minio:
-        condition: service_started
-      kafka:
-        condition: service_healthy
-
   postgres:
     image: postgres:15
     container_name: postgres
@@ -26,6 +8,8 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: iceberg
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres -d iceberg" ]
       interval: 10s
@@ -67,53 +51,35 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       CLUSTER_ID: Mk9VJqZfTiy5R4CHy7hPLA==
-#    volumes:
-#      - kafka-data:/opt/kafka/data
     healthcheck:
       test: [ "CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "kafka:9092", "--list" ]
       interval: 10s
       timeout: 10s
       retries: 5
 
-#  schema-registry:
-#    image: confluentinc/cp-schema-registry:7.5.0
-#    ports:
-#      - "8081:8081"
-#    environment:
-#      SCHEMA_REGISTRY_HOST_NAME: schema-registry
-#      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9092
-#    depends_on:
-#      kafka:
-#        condition: service_healthy
-#    healthcheck:
-#      test: [ "CMD", "curl", "-f", "http://localhost:8081/subjects" ]
-#      interval: 30s
-#      timeout: 10s
-#      retries: 5
-#      start_period: 60s
-
-  redpanda-console:
-    image: redpandadata/console:latest
-    container_name: redpanda-console
-    ports:
-      - "8080:8080"
-    entrypoint: /bin/sh
-    command: -c 'echo "$$CONSOLE_CONFIG_FILE" > /tmp/config.yml; /app/console'
-    environment:
-      CONFIG_FILEPATH: /tmp/config.yml
-      CONSOLE_CONFIG_FILE: |
-        kafka:
-          brokers: ["kafka:9092"]
+  producer:
+    image: airline-recommender/producer:1
+    container_name: producer
     depends_on:
       kafka:
         condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8080/api/health" ]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
 
-volumes:
-  minio_data:
-#  kafka-data:
+  parquet-writer:
+    image: airline-recommender/parquet-writer:1
+    container_name: parquet-writer
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+
+  spark-recommender:
+    image: airline-recommender/spark-recommender:1
+    container_name: spark-recommender
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_started

@@ -17,12 +17,12 @@ parquet-writer:
     url: http://minio:9000
     access-key: minioadmin
     secret-key: minioadmin
-    bucket: warehouse
+    bucket: airline-data
   iceberg:
     catalog-url: jdbc:postgresql://postgres:5432/iceberg
     catalog-user: postgres
     catalog-password: postgres
-    warehouse-path: s3a://warehouse/
+    warehouse-path: s3a://airline-data/
   table:
     namespace: default
     name: airline_event

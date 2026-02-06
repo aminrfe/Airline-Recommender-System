@@ -34,3 +34,4 @@ build/
 
 ### Docker Volumes ###
 deployment/minio-data/
+deployment/postgres-data/

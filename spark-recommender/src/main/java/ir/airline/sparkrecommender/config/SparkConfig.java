@@ -19,6 +19,7 @@ public class SparkConfig {
         return SparkSession.builder()
                 .appName("AirlineRecommenderJob")
                 .master("local[*]")
+                .config("spark.ui.enabled", "false")
                 .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
 
                 // 1. Iceberg JDBC Catalog Configuration
