@@ -17,6 +17,10 @@ spark-recommender:
     catalog-name: postgres_catalog
     database-name: default
     table-name: airline_event
+  postgres-properties:
+    url: jdbc:postgresql://postgres:5432/airline
+    user: postgres
+    password: postgres
 
 logging:
   level:

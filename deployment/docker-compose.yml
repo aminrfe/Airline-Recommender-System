@@ -16,7 +16,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-
+      # docker exec -it postgres psql -U postgres -d iceberg -c "CREATE DATABASE airline;"
   minio:
     image: minio/minio
     container_name: minio

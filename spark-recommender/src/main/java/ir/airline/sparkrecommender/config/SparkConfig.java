@@ -22,7 +22,6 @@ public class SparkConfig {
                 .config("spark.ui.enabled", "false")
                 .config("spark.sql.extensions", "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions")
 
-                // 1. Iceberg JDBC Catalog Configuration
                 .config(catalogConfigPrefix, "org.apache.iceberg.spark.SparkCatalog")
                 .config(catalogConfigPrefix + ".type", "jdbc")
                 .config(catalogConfigPrefix + ".uri", properties.getIcebergProperties().getCatalogUrl())
@@ -30,7 +29,6 @@ public class SparkConfig {
                 .config(catalogConfigPrefix + ".jdbc.password", properties.getIcebergProperties().getCatalogPassword())
                 .config(catalogConfigPrefix + ".warehouse", properties.getIcebergProperties().getWarehousePath())
 
-                // 2. S3A (Minio) Hadoop Configuration
                 .config("spark.hadoop.fs.s3a.endpoint", properties.getMinioProperties().getUrl())
                 .config("spark.hadoop.fs.s3a.access.key", properties.getMinioProperties().getAccessKey())
                 .config("spark.hadoop.fs.s3a.secret.key", properties.getMinioProperties().getSecretKey())
@@ -38,7 +36,6 @@ public class SparkConfig {
                 .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
                 .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false")
 
-                // 3. SQL Warehouse config (for non-catalog operations)
                 .config("spark.sql.warehouse.dir", properties.getIcebergProperties().getWarehousePath())
 
                 .getOrCreate();

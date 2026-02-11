@@ -12,7 +12,7 @@ public class SparkRecommenderProperties {
     private MinioProperties minioProperties = new MinioProperties();
     private IcebergProperties icebergProperties = new IcebergProperties();
     private TableProperties tableProperties = new TableProperties();
-    private String outputRecommendationTable;
+    private PostgresProperties postgresProperties = new PostgresProperties();
 
     @Data
     public static class MinioProperties {
@@ -35,6 +35,14 @@ public class SparkRecommenderProperties {
         private String catalogName;
         private String databaseName;
         private String tableName;
+    }
+
+    @Data
+    public static class PostgresProperties {
+        private String url;
+        private String user;
+        private String password;
+        private String driver = "org.postgresql.Driver";
     }
 
     public String getFullSourceTableName() {
