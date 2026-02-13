@@ -1,9 +1,17 @@
 package ir.airline.sparkrecommender.job;
 
-import static ir.airline.sparkrecommender.constant.SparkRecommenderConstants.*;
+import static ir.airline.sparkrecommender.constant.SparkRecommenderConstants.ARRIVAL_AIRPORT;
+import static ir.airline.sparkrecommender.constant.SparkRecommenderConstants.FLIGHT_STATUS;
+import static ir.airline.sparkrecommender.constant.SparkRecommenderConstants.ITEM_INDEX;
+import static ir.airline.sparkrecommender.constant.SparkRecommenderConstants.PASSENGER_ID;
+import static ir.airline.sparkrecommender.constant.SparkRecommenderConstants.TIMESTAMP;
+import static ir.airline.sparkrecommender.constant.SparkRecommenderConstants.USER_INDEX;
 import static org.apache.spark.sql.functions.*;
 
 import ir.airline.sparkrecommender.config.SparkRecommenderProperties;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.ml.feature.StringIndexer;
@@ -31,15 +39,20 @@ public class RecommenderJob {
     private static final String RECO_TABLE = "public.recommendations";
     private static final boolean EVAL_ENABLED = false;
     private static final int TOP_K = 5;
+    private static final int LOOKBACK_DAYS = 90;
+    private static final String TEHRAN_TZ = "Asia/Tehran";
     private static final int CANDIDATES = 50;
     private static final long RAND_SEED = 42L;
 
-    @Scheduled(initialDelay = 5000, fixedDelay = Long.MAX_VALUE)
+    // TODO: Run once a day after 2 am.
+    @Scheduled(initialDelay = 5000, fixedDelay = 86400000)
     public void executeJob() {
-        log.info("--- Starting Spark Iceberg Recommender Job ---");
+        log.info("--- Starting Optimized Spark Iceberg Recommender Job ---");
 
         try {
-            Dataset<Row> rawData = spark.table(props.getFullSourceTableName());
+            Timestamp cutoffDate = Timestamp.from(Instant.now().minus(LOOKBACK_DAYS, ChronoUnit.DAYS));
+            Dataset<Row> rawData = spark.table(props.getFullSourceTableName())
+                    .filter(col(TIMESTAMP).gt(lit(cutoffDate)));
 
             Column statusWeight = when(col(FLIGHT_STATUS).equalTo("On Time"), lit(1.0))
                     .when(col(FLIGHT_STATUS).equalTo("Delayed"), lit(0.6))
@@ -99,30 +112,34 @@ public class RecommenderJob {
                             col("rec.rating").as("score"))
                     .join(userMap, USER_INDEX)
                     .join(itemMap, ITEM_INDEX)
-                    .select(col(PASSENGER_ID), col(ARRIVAL_AIRPORT), col("score"));
+                    .select(col(PASSENGER_ID), col(ARRIVAL_AIRPORT), col("score"),
+                            from_utc_timestamp(current_timestamp(), TEHRAN_TZ).as("generated_at")
+                    );
 
             saveRecommendationsToPostgres(finalRecs);
 
         } catch (Exception e) {
-            log.error("Error in Spark Job", e);
+            log.error("Critical error in Spark Recommender Job", e);
         }
     }
 
     private void saveRecommendationsToPostgres(Dataset<Row> finalRecs) {
-        Dataset<Row> repartitioned = finalRecs.repartition(8);
+        log.info("Saving recommendations to Postgres via Truncate-and-Load...");
 
-        repartitioned.write()
+        finalRecs.repartition(8)
+                .write()
                 .format("jdbc")
                 .option("url", props.getPostgresProperties().getUrl())
                 .option("dbtable", RECO_TABLE)
                 .option("user", props.getPostgresProperties().getUser())
                 .option("password", props.getPostgresProperties().getPassword())
                 .option("driver", props.getPostgresProperties().getDriver())
-                .option("batchsize", "5000")
+                .option("batchsize", "10000")
                 .mode(SaveMode.Overwrite)
+                .option("truncate", "true")
                 .save();
 
-        log.info("Recommendations saved to Postgres table: {}", RECO_TABLE);
+        log.info("Job complete. Recommendations table refreshed.");
     }
 
 
