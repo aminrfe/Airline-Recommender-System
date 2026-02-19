@@ -1,0 +1,2 @@
+CREATE DATABASE iceberg;
+CREATE DATABASE airline;

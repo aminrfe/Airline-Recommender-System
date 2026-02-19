@@ -45,9 +45,9 @@ public class RecommenderJob {
     private static final long RAND_SEED = 42L;
 
     // TODO: Run once a day after 2 am.
-    @Scheduled(initialDelay = 5000, fixedDelay = 86400000)
+    @Scheduled(initialDelay = 60 * 1000, fixedDelay = 86400000)
     public void executeJob() {
-        log.info("--- Starting Optimized Spark Iceberg Recommender Job ---");
+        log.info("--- Starting Spark Iceberg Recommender Job ---");
 
         try {
             Timestamp cutoffDate = Timestamp.from(Instant.now().minus(LOOKBACK_DAYS, ChronoUnit.DAYS));
@@ -112,7 +112,10 @@ public class RecommenderJob {
                             col("rec.rating").as("score"))
                     .join(userMap, USER_INDEX)
                     .join(itemMap, ITEM_INDEX)
-                    .select(col(PASSENGER_ID), col(ARRIVAL_AIRPORT), col("score"),
+                    .select(
+                            col(PASSENGER_ID).as("passenger_id"),
+                            col(ARRIVAL_AIRPORT).as("arrival_airport"),
+                            col("score"),
                             from_utc_timestamp(current_timestamp(), TEHRAN_TZ).as("generated_at")
                     );
 

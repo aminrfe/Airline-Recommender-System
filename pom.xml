@@ -14,6 +14,7 @@
         <module>producer</module>
         <module>parquet-writer</module>
         <module>spark-recommender</module>
+        <module>recommender-api</module>
     </modules>
 
     <properties>

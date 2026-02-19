@@ -6,15 +6,19 @@ import ir.airline.parquetwriter.util.SchemaUtil;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.iceberg.AppendFiles;
 import org.apache.iceberg.DataFile;
+import org.apache.iceberg.PartitionKey;
 import org.apache.iceberg.PartitionSpec;
 import org.apache.iceberg.Schema;
 import org.apache.iceberg.Table;
@@ -35,7 +39,6 @@ public class IcebergTableManager {
 
     private Table table;
     private TableIdentifier tableId;
-    private static int rows;
 
     @PostConstruct
     public void init() {
@@ -52,23 +55,40 @@ public class IcebergTableManager {
             return;
         }
         Schema schema = SchemaUtil.ICEBERG_SCHEMA;
-        // TODO: Add partition key
-        PartitionSpec spec = PartitionSpec.unpartitioned();
+        PartitionSpec spec = PartitionSpec.builderFor(schema)
+                .day("timestamp")
+                .build();
         catalog.createTable(tableId, schema, spec);
-        log.info("Created Iceberg table {} with day(timestamp) partition", tableId);
+        log.info("Created Iceberg table {} partitioned by day(timestamp)", tableId);
     }
 
     public void appendRecords(List<GenericRecord> avroRecords) throws IOException {
         List<Record> icebergRecords = convertToIcebergRecords(avroRecords);
-        List<DataFile> dataFiles = parquetWriter.writeParquet(table, icebergRecords);
+        Map<LocalDate, List<Record>> byDay = icebergRecords.stream()
+                .collect(Collectors.groupingBy(this::extractDay));
         AppendFiles append = table.newAppend();
-        dataFiles.forEach(append::appendFile);
-        append.commit();
-        log.info("Appended {} records to {}", avroRecords.size(), tableId);
+        for (var entry : byDay.entrySet()) {
+            LocalDate day = entry.getKey();
+            List<Record> dayRecords = entry.getValue();
+            PartitionKey pk = new PartitionKey(table.spec(), table.schema());
+            int daysSinceEpoch = (int) day.toEpochDay();
+            pk.set(0, daysSinceEpoch);
 
-        // TODO: Remove
-        rows = rows + icebergRecords.size();
-        System.out.println("Total rows in Iceberg table: " + rows);
+            String partitionDir = day + "/";
+            String filename = ParquetWriterService.newParquetFilename();
+            String relativePath = partitionDir + filename;
+            DataFile df = parquetWriter.writeParquet(table, dayRecords, relativePath, pk);
+            append.appendFile(df);
+        }
+        append.commit();
+    }
+
+    private LocalDate extractDay(Record r) {
+        Object tsObj = r.getField("timestamp");
+        if (!(tsObj instanceof LocalDateTime ts)) {
+            throw new IllegalStateException("Record timestamp is not LocalDateTime: " + tsObj);
+        }
+        return ts.toLocalDate();
     }
 
     private List<Record> convertToIcebergRecords(List<GenericRecord> avroRecords) {

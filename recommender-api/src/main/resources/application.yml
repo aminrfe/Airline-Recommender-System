@@ -1,0 +1,15 @@
+server:
+  port: 8085
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/airline
+    username: postgres
+    password: postgres
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
