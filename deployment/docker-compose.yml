@@ -69,9 +69,9 @@ services:
       timeout: 10s
       retries: 5
 
-  producer:
-    image: airline-recommender/producer:1
-    container_name: producer
+  ingester:
+    image: airline-recommender/ingester:1
+    container_name: ingester
     depends_on:
       kafka:
         condition: service_healthy
@@ -87,13 +87,15 @@ services:
       kafka:
         condition: service_healthy
 
-  spark-recommender:
-    image: airline-recommender/spark-recommender:1
-    container_name: spark-recommender
+  recommender-job:
+    image: airline-recommender/recommender-job:1
+    container_name: recommender-job
     depends_on:
       postgres:
         condition: service_healthy
       minio-init:
+        condition: service_started
+      parquet-writer:
         condition: service_started
 
   recommender-api:
