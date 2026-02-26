@@ -4,7 +4,8 @@ import java.time.LocalDateTime;
 
 public record RecommendationDto(
         String passengerId,
-        String arrivalAirport,
-        double score,
+        String airportCode,
+        String city,
+        String country,
         LocalDateTime generatedAt
 ) {}

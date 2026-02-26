@@ -15,6 +15,6 @@ import lombok.Setter;
 @EqualsAndHashCode
 public class RecommendationRowId implements Serializable {
     private String passengerId;
-    private String arrivalAirport;
+    private String arrivalAirportCode;
     private LocalDateTime generatedAt;
 }

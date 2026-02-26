@@ -48,11 +48,21 @@ public class SparkJob {
     @Scheduled(initialDelay = 90 * 1000, fixedDelay = 86400000)
     public void executeJob() {
         log.info("--- Starting Spark Recommender Job ---");
-
+        String airportFilePath = getClass().getClassLoader()
+                .getResource("airports.csv").getPath();
         try {
             Timestamp cutoffDate = Timestamp.from(Instant.now().minus(LOOKBACK_DAYS, ChronoUnit.DAYS));
             Dataset<Row> rawData = spark.table(props.getFullSourceTableName())
                     .filter(col(TIMESTAMP).gt(lit(cutoffDate)));
+            Dataset<Row> airportLookup = spark.read()
+                    .option("header", "false")
+                    .option("inferSchema", "true")
+                    .csv(airportFilePath)
+                    .select(
+                            col("_c2").as("city"),
+                            col("_c3").as("country"),
+                            col("_c4").as("iata_code")
+                    );
 
             Column statusWeight = when(col(FLIGHT_STATUS).equalTo("On Time"), lit(1.0))
                     .when(col(FLIGHT_STATUS).equalTo("Delayed"), lit(0.6))
@@ -112,9 +122,12 @@ public class SparkJob {
                             col("rec.rating").as("score"))
                     .join(userMap, USER_INDEX)
                     .join(itemMap, ITEM_INDEX)
+                    .join(airportLookup, col(ARRIVAL_AIRPORT).equalTo(col("iata_code")), "left")
                     .select(
                             col(PASSENGER_ID).as("passenger_id"),
-                            col(ARRIVAL_AIRPORT).as("arrival_airport"),
+                            col(ARRIVAL_AIRPORT).as("arrival_airport_code"),
+                            col("city").as("arrival_city"),
+                            col("country").as("arrival_country"),
                             col("score"),
                             from_utc_timestamp(current_timestamp(), TEHRAN_TZ).as("generated_at")
                     );

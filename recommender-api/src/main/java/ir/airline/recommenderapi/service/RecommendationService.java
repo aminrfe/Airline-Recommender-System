@@ -15,13 +15,17 @@ public class RecommendationService {
 
     public List<RecommendationDto> latestForPassenger(String passengerId) {
         return repo.findLatestForPassenger(passengerId).stream()
-                .map(r -> new RecommendationDto(r.getPassengerId(), r.getArrivalAirport(), r.getScore(), r.getGeneratedAt()))
+                .filter(r -> r.getArrivalCity() != null)
+                .map(r -> new RecommendationDto(r.getPassengerId(), r.getArrivalAirportCode(), r.getArrivalCity(),
+                        r.getArrivalCountry(), r.getGeneratedAt()))
                 .toList();
     }
 
     public List<RecommendationDto> forPassengerAt(String passengerId, LocalDateTime generatedAt) {
         return repo.findByPassengerIdAndGeneratedAtOrderByScoreDesc(passengerId, generatedAt).stream()
-                .map(r -> new RecommendationDto(r.getPassengerId(), r.getArrivalAirport(), r.getScore(), r.getGeneratedAt()))
+                .filter(r -> r.getArrivalCity() != null)
+                .map(r -> new RecommendationDto(r.getPassengerId(), r.getArrivalAirportCode(), r.getArrivalCity(),
+                        r.getArrivalCountry(), r.getGeneratedAt()))
                 .toList();
     }
 }

@@ -27,12 +27,18 @@ public class RecommendationRow {
     private String passengerId;
 
     @Id
-    @Column(name = "arrival_airport", nullable = false)
-    private String arrivalAirport;
+    @Column(name = "arrival_airport_code", nullable = false)
+    private String arrivalAirportCode;
 
     @Id
     @Column(name = "generated_at", nullable = false)
     private LocalDateTime generatedAt;
+
+    @Column(name = "arrival_city")
+    private String arrivalCity;
+
+    @Column(name = "arrival_country")
+    private String arrivalCountry;
 
     @Column(name = "score", nullable = false)
     private double score;
