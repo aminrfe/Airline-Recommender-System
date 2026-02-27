@@ -23,12 +23,8 @@ public interface RecommendationRepository extends JpaRepository<RecommendationRo
           """)
     List<RecommendationRow> findLatestForPassenger(@Param("passengerId") String passengerId);
 
-    @Query("""
-              select max(r.generatedAt)
-              from RecommendationRow r
-              where r.passengerId = :passengerId
-          """)
-    LocalDateTime findLatestGeneratedAt(@Param("passengerId") String passengerId);
-
-    List<RecommendationRow> findByPassengerIdAndGeneratedAtOrderByScoreDesc(String passengerId, LocalDateTime generatedAt);
+    List<RecommendationRow>
+    findByPassengerIdAndGeneratedAtGreaterThanEqualAndGeneratedAtLessThanOrderByScoreDesc(
+            String passengerId, LocalDateTime start, LocalDateTime end
+    );
 }

@@ -21,11 +21,18 @@ public class RecommendationService {
                 .toList();
     }
 
-    public List<RecommendationDto> forPassengerAt(String passengerId, LocalDateTime generatedAt) {
-        return repo.findByPassengerIdAndGeneratedAtOrderByScoreDesc(passengerId, generatedAt).stream()
+    public List<RecommendationDto> forPassengerBetween(String passengerId, LocalDateTime start, LocalDateTime end) {
+        return repo.findByPassengerIdAndGeneratedAtGreaterThanEqualAndGeneratedAtLessThanOrderByScoreDesc(
+                        passengerId, start, end
+                ).stream()
                 .filter(r -> r.getArrivalCity() != null)
-                .map(r -> new RecommendationDto(r.getPassengerId(), r.getArrivalAirportCode(), r.getArrivalCity(),
-                        r.getArrivalCountry(), r.getGeneratedAt()))
+                .map(r -> new RecommendationDto(
+                        r.getPassengerId(),
+                        r.getArrivalAirportCode(),
+                        r.getArrivalCity(),
+                        r.getArrivalCountry(),
+                        r.getGeneratedAt()
+                ))
                 .toList();
     }
 }

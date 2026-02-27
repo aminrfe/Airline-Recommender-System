@@ -3,10 +3,11 @@ package ir.airline.recommenderapi.controller;
 import io.swagger.v3.oas.annotations.Parameter;
 import ir.airline.recommenderapi.dto.RecommendationDto;
 import ir.airline.recommenderapi.service.RecommendationService;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeParseException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -22,20 +23,19 @@ public class RecommendationController {
     private final RecommendationService service;
 
     @GetMapping("/{passengerId}/latest")
-    public List<RecommendationDto> latest(@Parameter(required = true) @PathVariable("passengerId") String passengerId) {
+    public List<RecommendationDto> latest(
+            @Parameter(required = true) @PathVariable("passengerId") String passengerId
+    ) {
         return service.latestForPassenger(passengerId);
     }
 
     @GetMapping("/{passengerId}")
-    public ResponseEntity<List<RecommendationDto>> byGeneratedAt(
+    public ResponseEntity<List<RecommendationDto>> byDate(
             @Parameter(required = true) @PathVariable("passengerId") String passengerId,
-            @Parameter(required = true) @RequestParam("generatedAt") String generatedAt
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
-        try {
-            LocalDateTime ts = LocalDateTime.parse(generatedAt);
-            return ResponseEntity.ok(service.forPassengerAt(passengerId, ts));
-        } catch (DateTimeParseException e) {
-            return ResponseEntity.badRequest().build();
-        }
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.plusDays(1).atStartOfDay();
+        return ResponseEntity.ok(service.forPassengerBetween(passengerId, start, end));
     }
 }
